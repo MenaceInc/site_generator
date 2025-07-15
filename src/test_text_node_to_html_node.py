@@ -43,3 +43,9 @@ class TestLeafNode(unittest.TestCase):
         self.assertEqual(html_node.value, "")
         self.assertEqual(html_node.props, {"src": "https://menaceinc.com/favicon.ico",
                                            "alt": "This is an image text node"})
+        
+    def test_unknown_text(self):
+        node = TextNode("","")
+        with self.assertRaises(Exception):
+            text_node_to_html_node(node)
+
