@@ -3,12 +3,12 @@ from htmlnode import HTMLNode, LeafNode
 
 
 class TextType(Enum):
-    TEXT = ""
-    BOLD = "**"
-    ITALIC = "_"
-    CODE = "`"
-    LINK = "[]()"
-    IMAGE = "![]()"
+    TEXT    = "text"
+    BOLD    = "bold"
+    ITALIC  = "italic"
+    CODE    = "code"
+    LINK    = "link"
+    IMAGE   = "image"
 
 
 class TextNode:
@@ -16,7 +16,7 @@ class TextNode:
         self.text = text
         self.text_type = text_type
         self.url = url
-
+    
     def __eq__(self, rhs_node):
         return self.text == rhs_node.text and self.text_type == rhs_node.text_type and self.url == rhs_node.url
     
@@ -26,7 +26,7 @@ class TextNode:
 
 def text_node_to_html_node(text_node):
     new_node = HTMLNode()
-
+    
     match (text_node.text_type):
         case TextType.TEXT:
             new_node = LeafNode(tag=None, value=text_node.text)
@@ -42,5 +42,5 @@ def text_node_to_html_node(text_node):
             new_node = LeafNode(tag="img", value="", props={"src": text_node.url, "alt": text_node.text})
         case _:
             raise Exception("Unknown text_type when converting TextNode to HTMLNode")
-        
+    
     return new_node
