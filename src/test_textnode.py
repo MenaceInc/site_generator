@@ -86,7 +86,5 @@ class TestLeafNode(unittest.TestCase):
             text_node_to_html_node(node)
 
 
-
 if __name__ == "__main__":
     unittest.main()
-    

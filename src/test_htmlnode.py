@@ -1,5 +1,4 @@
 import unittest
-
 from htmlnode import *
 
 
@@ -10,46 +9,92 @@ class TestHTMLNode(unittest.TestCase):
         
         self.assertEqual(node, node2)
 
-    def test_not_eq(self):
-        node = HTMLNode(tag="a")
+        node = HTMLNode(tag="p")
         node2 = HTMLNode()
-        
+
         self.assertNotEqual(node, node2)
 
+        node = HTMLNode(tag="p")
+        node2 = HTMLNode(tag="p")
+
+        self.assertEqual(node, node2)
+
+    def test_repr(self):
+        node = HTMLNode()
+        expected = "HTMLNode(tag:None, value:None, children:None, props:None)"
+
+        self.assertEqual(node.__repr__(), expected)
+        
+        node = HTMLNode(tag="p", value="Lorem ipsum")
+        expected = "HTMLNode(tag:p, value:Lorem ipsum, children:None, props:None)"
+
+        self.assertEqual(node.__repr__(), expected)
+        
+        node = HTMLNode(tag="a", value="my website", props={"href": "https://menaceinc.com"})
+        expected = "HTMLNode(tag:a, value:my website, children:None, props:{'href': 'https://menaceinc.com'})"
+
+        self.assertEqual(node.__repr__(), expected)
+
+    def test_to_html(self):
+        node = HTMLNode()
+
+        with self.assertRaises(NotImplementedError):
+            node.to_html()
+
     def test_props_to_html(self):
+        node = HTMLNode()
+        expected = ""
+
+        self.assertEqual(node.props_to_html(), expected)
+
+        node = HTMLNode(props={})
+        expected = ""
+
+        self.assertEqual(node.props_to_html(), expected)
+
         node = HTMLNode(tag="a", props={"href": "https://menaceinc.com", "target": "_blank"})
         expected = ' href="https://menaceinc.com" target="_blank"'
-        self.assertNotEqual(node.props_to_html(), expected)
+
+        self.assertEqual(node.props_to_html(), expected)
 
 
 class TestLeafNode(unittest.TestCase):
-    def test_eq(self):
-        node = LeafNode("p", "Lorem ipsum")
-        node2 = LeafNode("p", "Lorem ipsum")
-        
-        self.assertEqual(node, node2)
-
-    def test_not_eq(self):
-        node = LeafNode("b", "Bold sample text")
-        node2 = LeafNode("p", "Lorem ipsum")
-        
-        self.assertNotEqual(node, node2)
+    def test_init(self):
+        with self.assertRaises(TypeError):
+            node = LeafNode()
 
     def test_to_html(self):
-        node = LeafNode("p", "This is a paragraph of text.")
+        node = LeafNode(tag=None, value=None)
+        with self.assertRaises(ValueError):
+            node.to_html()
+
+        node = LeafNode(tag=None, value="This is an untagged piece of text")
+        expected = "This is an untagged piece of text"
+        
+        self.assertEqual(node.to_html(), expected)
+
+        node = LeafNode(tag="p", value="This is a paragraph of text.")
         expected = "<p>This is a paragraph of text.</p>"
         
         self.assertEqual(node.to_html(), expected)
 
 
 class TestParentNode(unittest.TestCase):
-    def test_eq(self):
-        node = ParentNode("p", "Lorem ipsum")
-        node2 = ParentNode("p", "Lorem ipsum")
-        
-        self.assertEqual(node, node2)
+    def test_init(self):
+        with self.assertRaises(TypeError):
+            node = ParentNode()
 
     def test_to_html(self):
+        node = ParentNode(None, None)
+        
+        with self.assertRaises(ValueError):
+            node.to_html()
+
+        node = ParentNode("p", None)
+        
+        with self.assertRaises(ValueError):
+            node.to_html()
+
         node = ParentNode(
             "p",
             [
@@ -64,21 +109,21 @@ class TestParentNode(unittest.TestCase):
 
         self.assertEqual(node.to_html(), expected)
         
-    def test_to_html_with_children(self):
         child_node = LeafNode("span", "child")
-        parent_node = ParentNode("div", [child_node])
-        self.assertEqual(parent_node.to_html(), "<div><span>child</span></div>")
+        node = ParentNode("div", [child_node])
 
-    def test_to_html_with_grandchildren(self):
+        expected = "<div><span>child</span></div>"
+
+        self.assertEqual(node.to_html(), expected)
+
         grandchild_node = LeafNode("b", "grandchild")
         child_node = ParentNode("span", [grandchild_node])
-        parent_node = ParentNode("div", [child_node])
-        self.assertEqual(
-            parent_node.to_html(),
-            "<div><span><b>grandchild</b></span></div>",
-        )
-    
+        node = ParentNode("div", [child_node])
+
+        expected = "<div><span><b>grandchild</b></span></div>"
+
+        self.assertEqual(node.to_html(), expected)
+
 
 if __name__ == "__main__":
     unittest.main()
-    

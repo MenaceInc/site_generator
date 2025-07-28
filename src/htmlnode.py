@@ -1,4 +1,3 @@
-
 class HTMLNode:
     def __init__(self, tag=None, value=None, children=None, props=None):
         self.tag = tag
@@ -13,27 +12,33 @@ class HTMLNode:
         return f"HTMLNode(tag:{self.tag}, value:{self.value}, children:{self.children}, props:{self.props})"
     
     def to_html(self):
-        raise NotImplementedError()
+        raise NotImplementedError("to_html() called on HTMLNode." \
+        "Please use LeafNode, ParentNode or another derived class with an overloaded to_html() function")
     
     def props_to_html(self):
+        if self.props is None:
+            return ""
+        
         result = ""
         for key in self.props:
-            result += f" {key}={self.props[key]}"
+            result += f' {key}="{self.props[key]}"'
         return result
-    
+
+
 class LeafNode(HTMLNode):
     def __init__(self, tag, value, props=None):
         super().__init__(tag=tag, value=value, props=props)
 
     def to_html(self):
         if self.value == None:
-            raise ValueError()
+            raise ValueError("Missing value in LeafNode")
         
         if self.tag == None:
             return self.value
         
         return f"<{self.tag}>{self.value}</{self.tag}>"
-    
+
+
 class ParentNode(HTMLNode):
     def __init__(self, tag, children, props=None):
         super().__init__(tag=tag, children=children, props=props)
