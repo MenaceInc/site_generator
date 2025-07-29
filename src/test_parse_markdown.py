@@ -1,8 +1,10 @@
 import unittest
-
 from parse_markdown import (
+    BlockType,
+    block_to_blocktype,
     extract_markdown_images,
     extract_markdown_links,
+    markdown_to_blocks,
     split_nodes_delimiter,
     split_nodes_image,
     split_nodes_link,
@@ -12,6 +14,153 @@ from textnode import TextNode, TextType
 
 
 class TestParseMarkdown(unittest.TestCase):
+    def test_block_to_blocktype(self):
+        markdown = """
+This is a regular paragraph with _italic_ text and `code` here
+This is the same paragraph on a new line
+"""
+        blocks = markdown_to_blocks(markdown)
+        self.assertEqual(BlockType.PARAGRAPH, block_to_blocktype(blocks[0]))
+
+        markdown = """
+# This is a h1 heading
+"""
+
+        blocks = markdown_to_blocks(markdown)
+        self.assertEqual(BlockType.HEADING, block_to_blocktype(blocks[0]))
+
+        markdown = """
+## This is a h2 heading
+"""
+
+        blocks = markdown_to_blocks(markdown)
+        self.assertEqual(BlockType.HEADING, block_to_blocktype(blocks[0]))
+
+        markdown = """
+### This is a h3 heading
+"""
+
+        blocks = markdown_to_blocks(markdown)
+        self.assertEqual(BlockType.HEADING, block_to_blocktype(blocks[0]))
+
+        markdown = """
+#### This is a h4 heading
+"""
+
+        blocks = markdown_to_blocks(markdown)
+        self.assertEqual(BlockType.HEADING, block_to_blocktype(blocks[0]))
+
+        markdown = """
+##### This is a h5 heading
+"""
+
+        blocks = markdown_to_blocks(markdown)
+        self.assertEqual(BlockType.HEADING, block_to_blocktype(blocks[0]))
+
+        markdown = """
+###### This is a h6 heading
+"""
+
+        blocks = markdown_to_blocks(markdown)
+        self.assertEqual(BlockType.HEADING, block_to_blocktype(blocks[0]))
+
+        markdown = """
+####### This is a malformed heading with 7 hashes and should be considered a paragraph
+"""
+
+        blocks = markdown_to_blocks(markdown)
+        self.assertEqual(BlockType.PARAGRAPH, block_to_blocktype(blocks[0]))
+
+        markdown = """
+# This is a malformed heading with multiple lines
+# and should be considered a paragraph
+"""
+
+        blocks = markdown_to_blocks(markdown)
+        self.assertEqual(BlockType.PARAGRAPH, block_to_blocktype(blocks[0]))
+
+        markdown = """
+```
+#include <print>
+int main(int argc, char* argv[]) {
+    std::print("Hello, World!");
+    return 0;
+}
+```
+"""
+
+        blocks = markdown_to_blocks(markdown)
+        self.assertEqual(BlockType.CODE, block_to_blocktype(blocks[0]))
+
+        markdown = """
+``
+#include <print>
+int main(int argc, char* argv[]) {
+    std::print("Malformed code block, missing a backtick at the start");
+    std::print("Should be considered a paragraph");
+    return 0;
+}
+```
+"""
+
+        blocks = markdown_to_blocks(markdown)
+        self.assertEqual(BlockType.PARAGRAPH, block_to_blocktype(blocks[0]))
+
+        markdown = """
+> This is a quote block
+> Every line must start with a > character and a space
+"""
+
+        blocks = markdown_to_blocks(markdown)
+        self.assertEqual(BlockType.QUOTE, block_to_blocktype(blocks[0]))
+
+        markdown = """
+> This is a malformed quote block
+Every line must start with a > character and a space
+This should be considered a paragraph
+"""
+
+        blocks = markdown_to_blocks(markdown)
+        self.assertEqual(BlockType.PARAGRAPH, block_to_blocktype(blocks[0]))
+
+        markdown = """
+- This is an unordered list
+- with items
+- Each item must start with a hyphen and a space
+"""
+
+        blocks = markdown_to_blocks(markdown)
+        self.assertEqual(BlockType.UNORDERED_LIST, block_to_blocktype(blocks[0]))
+
+        markdown = """
+- This is a malformed unordered list
+- with items
+Each item must start with a hyphen and a space
+This should be considered a paragraph
+"""
+
+        blocks = markdown_to_blocks(markdown)
+        self.assertEqual(BlockType.PARAGRAPH, block_to_blocktype(blocks[0]))
+
+        markdown = """
+1. This is an ordered list
+2. with items
+3. Each item must start with an ascending number, full stop and space
+"""
+
+        blocks = markdown_to_blocks(markdown)
+        self.assertEqual(BlockType.ORDERED_LIST, block_to_blocktype(blocks[0]))
+
+        markdown = """
+1. This is a malformed ordered list
+2. with items
+Each item must start with an ascending number, full stop and space
+This should be considered a paragraph
+"""
+
+        blocks = markdown_to_blocks(markdown)
+        self.assertEqual(BlockType.PARAGRAPH, block_to_blocktype(blocks[0]))
+
     def test_extract_markdown_images(self):
         input = ""
         matches = extract_markdown_images(input)
@@ -106,6 +255,79 @@ class TestParseMarkdown(unittest.TestCase):
         self.assertListEqual(
             matches,
             []
+        )
+
+    def test_markdown_to_blocks(self):
+        md = ""
+        blocks = markdown_to_blocks(md)
+
+        self.assertEqual(
+            blocks,
+            [],
+        )
+
+        md = """
+This is **bolded** paragraph
+
+This is another paragraph with _italic_ text and `code` here
+This is the same paragraph on a new line
+
+- This is a list
+- with items
+"""
+        blocks = markdown_to_blocks(md)
+
+        self.assertEqual(
+            blocks,
+            [
+                "This is **bolded** paragraph",
+                "This is another paragraph with _italic_ text and `code` here\nThis is the same paragraph on a new line",
+                "- This is a list\n- with items",
+            ],
+        )
+
+        md = """
+             This is **bolded** paragraph            
+
+        This is another paragraph with _italic_ text and `code` here
+This is the same paragraph on a new line       
+
+- This is a list
+- with items          
+"""
+        blocks = markdown_to_blocks(md)
+
+        self.assertEqual(
+            blocks,
+            [
+                "This is **bolded** paragraph",
+                "This is another paragraph with _italic_ text and `code` here\nThis is the same paragraph on a new line",
+                "- This is a list\n- with items",
+            ],
+        )
+
+        md = """
+This is **bolded** paragraph
+
+
+
+This is another paragraph with _italic_ text and `code` here
+This is the same paragraph on a new line
+
+
+
+- This is a list
+- with items
+"""
+        blocks = markdown_to_blocks(md)
+
+        self.assertEqual(
+            blocks,
+            [
+                "This is **bolded** paragraph",
+                "This is another paragraph with _italic_ text and `code` here\nThis is the same paragraph on a new line",
+                "- This is a list\n- with items",
+            ],
         )
 
     def test_split_nodes_delimiter(self):
@@ -222,6 +444,7 @@ class TestParseMarkdown(unittest.TestCase):
                 TextNode("link", TextType.LINK, "https://boot.dev"),
             ]
         )
+
 
 if __name__ == "__main__":
     unittest.main()

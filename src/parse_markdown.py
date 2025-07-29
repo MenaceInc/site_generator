@@ -1,8 +1,59 @@
 import re
+from enum import Enum
 from textnode import TextNode, TextType
+
+
+class BlockType(Enum):
+    PARAGRAPH       = "paragraph"
+    HEADING         = "heading"
+    CODE            = "code"
+    QUOTE           = "quote"
+    UNORDERED_LIST  = "unordered_list"
+    ORDERED_LIST    = "ordered_list"
+
 
 markdown_image_regex = r"!\[([^\[\]]*)\]\(([^\(\)]*)\)"
 markdown_link_regex = r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)"
+
+
+def block_to_blocktype(block):
+    lines = block.split("\n")
+
+    match(block[0]):
+        case "#":
+            if len(lines) == 1 and \
+                lines[0].startswith(("# ", "## ", "### ", "#### ", "##### ", "###### ")):
+                return BlockType.HEADING
+            
+        case "`":
+            if lines[0].startswith("```") and lines[-1].endswith("```"):
+                return BlockType.CODE
+            
+        case ">":
+            for line in lines:
+                if not line.startswith("> "):
+                    return BlockType.PARAGRAPH
+            return BlockType.QUOTE
+        
+        case "-":
+            for line in lines:
+                if not line.startswith("- "):
+                    return BlockType.PARAGRAPH
+            return BlockType.UNORDERED_LIST
+        
+        case "1":
+            current_index = 1
+            for line in lines:
+                if not line.startswith(f"{current_index}. "):
+                    return BlockType.PARAGRAPH
+                current_index += 1
+            return BlockType.ORDERED_LIST
+        
+        case _:
+            return BlockType.PARAGRAPH
+
+    return BlockType.PARAGRAPH
+
 
 def extract_markdown_images(text):
     return re.findall(markdown_image_regex, text)
@@ -10,6 +61,25 @@ def extract_markdown_images(text):
 
 def extract_markdown_links(text):
     return re.findall(markdown_link_regex, text)
+
+
+def markdown_to_blocks(markdown):
+    if markdown == "":
+        return []
+
+    blocks = markdown.split("\n\n")
+
+    for index in range(len(blocks)):
+        blocks[index] = blocks[index].lstrip().rstrip()
+
+    result = []
+
+    for block in blocks:
+        
+        if block != '':
+            result.append(block)
+
+    return result
 
 
 def split_nodes_delimiter(old_nodes, delimiter, text_type):
